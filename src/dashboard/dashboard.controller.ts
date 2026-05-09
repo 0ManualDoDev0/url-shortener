@@ -1,6 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+type GroupRow = { label: string | null; clicks: bigint };
+
 @Controller('api/dashboard')
 export class DashboardController {
   constructor(private readonly prisma: PrismaService) {}
@@ -17,22 +19,25 @@ export class DashboardController {
           take: 10,
           include: { _count: { select: { clicks: true } } },
         }),
-        this.prisma.click.groupBy({
-          by: ['device'],
-          _count: { _all: true },
-          orderBy: { _count: { _all: 'desc' } },
-        }),
-        this.prisma.click.groupBy({
-          by: ['browser'],
-          _count: { _all: true },
-          orderBy: { _count: { _all: 'desc' } },
-        }),
-        this.prisma.click.groupBy({
-          by: ['country'],
-          _count: { _all: true },
-          orderBy: { _count: { _all: 'desc' } },
-          take: 10,
-        }),
+        this.prisma.$queryRaw<GroupRow[]>`
+          SELECT device AS label, COUNT(*)::bigint AS clicks
+          FROM "Click"
+          GROUP BY device
+          ORDER BY clicks DESC
+        `,
+        this.prisma.$queryRaw<GroupRow[]>`
+          SELECT browser AS label, COUNT(*)::bigint AS clicks
+          FROM "Click"
+          GROUP BY browser
+          ORDER BY clicks DESC
+        `,
+        this.prisma.$queryRaw<GroupRow[]>`
+          SELECT country AS label, COUNT(*)::bigint AS clicks
+          FROM "Click"
+          GROUP BY country
+          ORDER BY clicks DESC
+          LIMIT 10
+        `,
       ]);
 
     return {
@@ -45,9 +50,9 @@ export class DashboardController {
         clicks: u._count.clicks,
         createdAt: u.createdAt,
       })),
-      clicksByDevice: byDevice.map((r) => ({ device: r.device ?? 'unknown', clicks: r._count._all })),
-      clicksByBrowser: byBrowser.map((r) => ({ browser: r.browser ?? 'unknown', clicks: r._count._all })),
-      clicksByCountry: byCountry.map((r) => ({ country: r.country ?? 'unknown', clicks: r._count._all })),
+      clicksByDevice: byDevice.map((r) => ({ device: r.label ?? 'unknown', clicks: Number(r.clicks) })),
+      clicksByBrowser: byBrowser.map((r) => ({ browser: r.label ?? 'unknown', clicks: Number(r.clicks) })),
+      clicksByCountry: byCountry.map((r) => ({ country: r.label ?? 'unknown', clicks: Number(r.clicks) })),
     };
   }
 }

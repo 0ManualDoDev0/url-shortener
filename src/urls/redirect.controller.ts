@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, Req, NotFoundException, GoneException } from '@nestjs/common';
+import { Controller, Get, Param, Res, Req, NotFoundException } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { UrlsService } from './urls.service';
@@ -16,9 +16,8 @@ export class RedirectController {
   async redirect(@Param('code') code: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.urlsService.resolve(code);
 
-    if (!result.ok) {
-      if (result.reason === 'not_found') throw new NotFoundException('URL not found');
-      throw new GoneException('URL has expired or reached its click limit');
+    if (result.ok === false) {
+      throw new NotFoundException('URL not found or expired');
     }
 
     this.analyticsService.track(result.urlId, req).catch(() => {});
