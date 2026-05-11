@@ -7,6 +7,7 @@ import { RedisModule } from './redis/redis.module';
 import { UrlsModule } from './urls/urls.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AnalyticsModule,
     DashboardModule,
   ],
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
